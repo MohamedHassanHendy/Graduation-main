@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:graduation_project/shared/components/components.dart';
 import '../../shared/cubit/cubit.dart';
@@ -11,6 +13,42 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    late LatLng currentLatLng = const LatLng(30.10261, 31.2089001);
+    final Completer<GoogleMapController> _controller = Completer();
+    Future<void> _determinePosition() async{
+      Position position = await Geolocator.getCurrentPosition();
+      void setState(Null Function() param0) {
+      }
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      // Test if location services are enabled.
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return Future.error('Location services are disabled.');
+      }
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return Future.error('Location permissions are denied');
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        // Permissions are denied forever, handle appropriately.
+        return Future.error(
+            'Location permissions are permanently denied, we cannot request permissions.');
+      }
+    }
+
+
+    Future<void> _currentLocation() async {
+      await _determinePosition();
+      GoogleMapController controller = await _controller.future;
+      controller.animateCamera(CameraUpdate.newCameraPosition(
+          CameraPosition(target:currentLatLng,zoom: 12)
+      ));
+    }
 
     return BlocConsumer<AppCubit,AppStates>(
       listener: (context, state) {},
@@ -630,4 +668,5 @@ class HomeScreen extends StatelessWidget {
       },
     );
   }
+
 }
